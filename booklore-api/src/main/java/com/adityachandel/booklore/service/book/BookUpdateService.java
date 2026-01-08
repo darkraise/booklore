@@ -99,6 +99,8 @@ public class BookUpdateService {
             epubPrefs.setSpread(epubSettings.getSpread());
             epubPrefs.setLetterSpacing(epubSettings.getLetterSpacing());
             epubPrefs.setLineHeight(epubSettings.getLineHeight());
+            epubPrefs.setMargin(epubSettings.getMargin());
+            epubPrefs.setCustomFontId(epubSettings.getCustomFontId());
             epubViewerPreferencesRepository.save(epubPrefs);
 
         } else if (bookEntity.getBookType() == BookFileType.CBX) {

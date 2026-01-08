@@ -122,4 +122,20 @@
       </p>
     </div>
   </div>
+
+  <div class="setting-item">
+    <div class="setting-info">
+      <div class="setting-label-row">
+        <label class="setting-label">Page Margin</label>
+        <div class="font-size-controls">
+          <p-button icon="pi pi-minus" size="small" rounded (click)="decreaseMargin()"></p-button>
+          <span class="font-size-value">{{ margin }}%</span>
+          <p-button icon="pi pi-plus" size="small" rounded (click)="increaseMargin()"></p-button>
+        </div>
+      </div>
+      <p class="setting-description">
+        Adjust the horizontal margin for comfortable reading width.
+      </p>
+    </div>
+  </div>
 </div>

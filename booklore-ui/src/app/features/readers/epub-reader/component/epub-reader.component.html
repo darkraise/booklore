@@ -198,6 +198,20 @@
                           </p-slider>
                         </div>
                       </div>
+                      <div class="setting-row">
+                        <label>Page Margin</label>
+                        <div class="slider-container">
+                          <span class="slider-value">{{ margin ?? 0 }}%</span>
+                          <p-slider
+                            [(ngModel)]="margin"
+                            [min]="0"
+                            [max]="35"
+                            [step]="5"
+                            (onSlideEnd)="updateMargin()"
+                            [style]="{ width: '100%' }">
+                          </p-slider>
+                        </div>
+                      </div>
                     </div>
                   </div>
                   <div class="settings-card">
@@ -293,6 +307,7 @@
       <div id="epubContainer"
            #epubContainer
            [class.paginated-mode]="selectedFlow === 'paginated'"
+           [style.background-color]="getThemeColor(selectedTheme)"
            (click)="onBookClick($event)"
            (mousemove)="onBookMouseMove($event)"></div>
       @if (selectedFlow !== 'scrolled') {

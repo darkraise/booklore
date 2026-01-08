@@ -88,7 +88,9 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
   selectedSpread?: string = 'double';
   lineHeight?: number;
   letterSpacing?: number;
+  margin?: number;
   selectedCustomFontId?: number | null = null;
+  private isInitialDisplay = true;
   customFonts: CustomFont[] = [];
   customFontsReady = false;
 
@@ -135,6 +137,7 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.routeSubscription = this.route.paramMap.subscribe(async (params) => {
       this.isLoading = true;
+      this.isInitialDisplay = true;
       const bookId = +params.get('bookId')!;
 
       // Load custom fonts FIRST and wait for them
@@ -180,6 +183,7 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
             const resolvedTheme = settingScope === 'Global' ? globalSettings.theme : individualSetting?.theme;
             const resolvedLineHeight = settingScope === 'Global' ? globalSettings.lineHeight : individualSetting?.lineHeight;
             const resolvedLetterSpacing = settingScope === 'Global' ? globalSettings.letterSpacing : individualSetting?.letterSpacing;
+            const resolvedMargin = settingScope === 'Global' ? globalSettings.margin : individualSetting?.margin;
             const resolvedSpread = settingScope === 'Global' ? globalSettings.spread || 'double' : individualSetting?.spread || 'double';
             const resolvedCustomFontId = settingScope === 'Global' ? globalSettings.customFontId : individualSetting?.customFontId;
 
@@ -188,6 +192,7 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
             if (resolvedFontSize != null) this.fontSize = resolvedFontSize;
             if (resolvedLineHeight != null) this.lineHeight = resolvedLineHeight;
             if (resolvedLetterSpacing != null) this.letterSpacing = resolvedLetterSpacing;
+            if (resolvedMargin != null) this.margin = resolvedMargin;
             if (resolvedFlow != null) this.selectedFlow = resolvedFlow;
             if (resolvedSpread != null) this.selectedSpread = resolvedSpread;
 
@@ -251,15 +256,40 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
     this.updateViewerSetting();
   }
 
+  updateMargin(): void {
+    if (!this.rendition || !this.book) return;
+
+    // For margin changes, use resize() in-place rather than destroying rendition
+    // This maintains pagination accuracy and prevents the "skipped page" bug
+    const cfi = this.rendition.currentLocation()?.start?.cfi;
+    const dimensions = this.getRenditionDimensions();
+
+    // Resize the rendition with new dimensions
+    this.rendition.resize(dimensions.width, dimensions.height);
+
+    // Restore position after resize to prevent location drift
+    if (cfi) {
+      this.rendition.display(cfi);
+    }
+
+    this.updateViewerSetting();
+  }
+
   changeScrollMode(): void {
     if (!this.rendition || !this.book) return;
 
     const cfi = this.rendition.currentLocation()?.start?.cfi;
     const locations = this.book.locations.save();
 
+    // Flow mode changes require destroying/recreating rendition (different manager)
+    // But locations are render-independent and should be preserved
     this.initBook(locations);
-    this.initRendition(cfi);
-    this.updateViewerSetting();
+
+    // Wait for book to be ready before initializing rendition
+    this.book.ready.then(() => {
+      this.initRendition(cfi);
+      this.updateViewerSetting();
+    });
   }
 
   changeSpreadMode(): void {
@@ -268,9 +298,15 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
     const cfi = this.rendition.currentLocation()?.start?.cfi;
     const locations = this.book.locations.save();
 
+    // Spread mode changes require destroying/recreating rendition (different layout)
+    // But locations are render-independent and should be preserved
     this.initBook(locations);
-    this.initRendition(cfi);
-    this.updateViewerSetting();
+
+    // Wait for book to be ready before initializing rendition
+    this.book.ready.then(() => {
+      this.initRendition(cfi);
+      this.updateViewerSetting();
+    });
   }
 
   changeThemes(): void {
@@ -287,6 +323,22 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
       this.lineHeight,
       this.letterSpacing
     );
+  }
+
+  private getRenditionDimensions(): { width: number; height: number } {
+    const container = this.epubContainer?.nativeElement as HTMLElement;
+    if (!container) {
+      return { width: window.innerWidth, height: window.innerHeight };
+    }
+
+    const containerRect = container.getBoundingClientRect();
+    const marginValue = this.margin ?? 0;
+
+    // Calculate width with margin applied
+    const marginPixels = (containerRect.width * marginValue) / 100;
+    const width = containerRect.width - (marginPixels * 2);
+
+    return { width, height: containerRect.height };
   }
 
   updateFontSize(): void {
@@ -415,6 +467,7 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
     if (this.selectedSpread === 'single' || this.selectedSpread === 'double') epubSettings.spread = this.selectedSpread;
     if (this.lineHeight) epubSettings.lineHeight = this.lineHeight;
     if (this.letterSpacing) epubSettings.letterSpacing = this.letterSpacing;
+    if (this.margin != null) epubSettings.margin = this.margin;
     if (this.selectedCustomFontId != null) epubSettings.customFontId = this.selectedCustomFontId;
 
     const bookSetting: BookSetting = {
@@ -689,6 +742,12 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
         this.progressPercentage = Math.round(percentage * 1000) / 10;
       }
 
+      // Skip saving on initial display - progress was just loaded from server
+      if (this.isInitialDisplay) {
+        this.isInitialDisplay = false;
+        return;
+      }
+
       this.bookService.saveEpubProgress(this.epub.id, cfi, Math.round(percentage * 1000) / 10).subscribe();
 
       this.readingSessionService.updateProgress(
@@ -755,11 +814,13 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
       }
     }
 
+    const dimensions = this.getRenditionDimensions();
+
     this.rendition = this.book.renderTo(this.epubContainer.nativeElement, {
       flow: this.selectedFlow ?? 'paginated',
       manager: this.selectedFlow === 'scrolled' ? 'continuous' : 'default',
-      width: '100%',
-      height: '100%',
+      width: dimensions.width,
+      height: dimensions.height,
       spread: this.selectedFlow === 'paginated' && !this.isMobileDevice() ? (this.selectedSpread === 'single' ? 'none' : this.selectedSpread) : 'none',
       allowScriptedContent: true,
     });
@@ -783,9 +844,43 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
     this.rendition.themes.register('custom', combinedTheme);
     this.rendition.themes.select('custom');
 
-    const displayPromise = targetCfi
-      ? this.rendition.display(targetCfi)
-      : (this.epub?.epubProgress?.cfi ? this.rendition.display(this.epub.epubProgress.cfi) : this.rendition.display());
+    // Determine which CFI to display
+    const cfiToDisplay = targetCfi || this.epub?.epubProgress?.cfi;
+
+    // When displaying a specific CFI (either from targetCfi or saved progress),
+    // wait for fonts to load to ensure accurate positioning
+    // See: https://github.com/futurepress/epub.js/issues/1194
+    if (cfiToDisplay) {
+      const onceRendered = (section: any, view: any) => {
+        const viewDocument = view.document;
+        if (viewDocument && viewDocument.fonts) {
+          viewDocument.fonts.ready.then(() => {
+            this.rendition.display(cfiToDisplay).catch((error: any) => {
+              console.error('Error displaying CFI after font load:', error);
+            });
+          }).catch((error: any) => {
+            console.error('Error waiting for fonts:', error);
+            // Fallback: display anyway if font loading fails
+            this.rendition.display(cfiToDisplay).catch((e: any) => {
+              console.error('Fallback display error:', e);
+            });
+          });
+        } else {
+          // Fallback for browsers that don't support document.fonts
+          this.rendition.display(cfiToDisplay).catch((error: any) => {
+            console.error('Error displaying CFI (no fonts API):', error);
+          });
+        }
+        // Remove the listener after first use
+        this.rendition.off('rendered', onceRendered);
+      };
+
+      this.rendition.on('rendered', onceRendered);
+    }
+
+    const displayPromise = cfiToDisplay
+      ? this.rendition.display(cfiToDisplay)
+      : this.rendition.display();
 
     displayPromise.then(async () => {
       // Apply custom font after rendition is displayed

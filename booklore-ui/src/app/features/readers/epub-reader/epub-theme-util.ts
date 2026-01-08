@@ -170,9 +170,9 @@ export class EpubThemeUtil {
       case EpubTheme.BLACK:
         return '#000000';
       case EpubTheme.GREY:
-        return '#808080';
+        return '#404040'; // Fixed: now matches themesMap background color
       case EpubTheme.SEPIA:
-        return '#704214';
+        return '#f4ecd8'; // Fixed: now matches themesMap background color
       case EpubTheme.GREEN:
         return 'rgb(232, 245, 233)';
       case EpubTheme.LAVENDER:

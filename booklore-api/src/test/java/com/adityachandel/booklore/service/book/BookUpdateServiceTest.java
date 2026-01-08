@@ -128,6 +128,7 @@ class BookUpdateServiceTest {
                         .spread("spread")
                         .letterSpacing(1.2f)
                         .lineHeight(1.3f)
+                        .margin(20.0f)
                         .build())
                 .build();
 
@@ -141,6 +142,7 @@ class BookUpdateServiceTest {
         assertEquals("spread", epubPrefs.getSpread());
         assertEquals(1.2f, epubPrefs.getLetterSpacing());
         assertEquals(1.3f, epubPrefs.getLineHeight());
+        assertEquals(20.0f, epubPrefs.getMargin());
     }
 
     @Test

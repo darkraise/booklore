@@ -212,6 +212,8 @@ public class BookService {
                             .spread(epubPref.getSpread())
                             .letterSpacing(epubPref.getLetterSpacing())
                             .lineHeight(epubPref.getLineHeight())
+                            .margin(epubPref.getMargin())
+                            .customFontId(epubPref.getCustomFontId())
                             .build()));
         } else if (bookEntity.getBookType() == BookFileType.PDF) {
             pdfViewerPreferencesRepository.findByBookIdAndUserId(bookId, user.getId())

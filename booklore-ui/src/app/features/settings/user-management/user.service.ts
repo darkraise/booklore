@@ -103,7 +103,7 @@ export interface EpubReaderSetting {
   flow: string;
   spread: string;
   lineHeight: number;
-  margin: number;
+  margin?: number;
   letterSpacing: number;
   customFontId?: number | null;
 }

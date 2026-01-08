@@ -234,6 +234,27 @@ export class EpubReaderPreferencesComponent implements OnInit, OnDestroy {
     }
   }
 
+  get margin(): number {
+    return this.userSettings.epubReaderSetting.margin ?? 0;
+  }
+
+  set margin(value: number) {
+    this.userSettings.epubReaderSetting.margin = value;
+    this.readerPreferencesService.updatePreference(['epubReaderSetting', 'margin'], value);
+  }
+
+  increaseMargin() {
+    if (this.margin < 35) {
+      this.margin += 5;
+    }
+  }
+
+  decreaseMargin() {
+    if (this.margin > 0) {
+      this.margin -= 5;
+    }
+  }
+
   getCustomFontName(fontKey: string): string | null {
     if (!fontKey || !fontKey.startsWith('custom:')) {
       return null;

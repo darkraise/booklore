@@ -39,6 +39,9 @@ public class EpubViewerPreferencesEntity {
     @Column(name = "line_height")
     private Float lineHeight;
 
+    @Column(name = "margin")
+    private Float margin;
+
     @Column(name = "flow")
     private String flow;
 

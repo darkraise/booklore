@@ -200,6 +200,7 @@ export interface EpubViewerSetting {
   flow: string;
   lineHeight: number;
   letterSpacing: number;
+  margin?: number;
   spread: string;
   customFontId?: number | null;
 }

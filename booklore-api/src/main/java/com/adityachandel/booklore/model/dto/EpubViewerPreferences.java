@@ -1,5 +1,7 @@
 package com.adityachandel.booklore.model.dto;
 
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import lombok.Builder;
 import lombok.Data;
 
@@ -14,5 +16,8 @@ public class EpubViewerPreferences {
     private Integer fontSize;
     private Float letterSpacing;
     private Float lineHeight;
+    @Min(0)
+    @Max(35)
+    private Float margin;
     private Long customFontId;
 }

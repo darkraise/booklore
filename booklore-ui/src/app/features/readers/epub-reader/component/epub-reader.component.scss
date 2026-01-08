@@ -119,6 +119,9 @@
   position: relative;
   overflow: auto;
   pointer-events: auto;
+  display: flex;
+  justify-content: center;
+  align-items: stretch;
 
   &.paginated-mode {
     overflow: hidden;
